@@ -1,9 +1,10 @@
 "use strict"
 
-import { encodeUTF8, read } from "./util.js"
+import { encodeUTF8, read, sharbage } from "./util.js"
 import { create, cut, withPolynom } from "../lib.js"
 import { assert } from "chai"
 import * as FZSTD from "fzstd"
+import * as FS from "fs"
 
 describe("rabin", () => {
   it("chunks for 1MiB.txt", async () => {
@@ -73,5 +74,14 @@ describe("rabin", () => {
 
     assert.deepEqual([...cut(r, bytes.slice(0, 736976))], [366598, 239921])
     assert.deepEqual([...cut(r, bytes)], [366598, 239921, 260915])
+  })
+
+  it("compat test", async () => {
+    const bytes = await sharbage(524288)
+    console.log(bytes.byteLength)
+
+    const r = await create(18, 87381, 393216, 16)
+
+    assert.deepEqual([...cut(r, bytes)], [189236, 177457, 157595])
   })
 })
