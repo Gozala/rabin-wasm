@@ -9,7 +9,7 @@ pub trait Polynom {
 pub type Polynom64 = u64;
 
 // Default irreductible modulo polynom.
-pub const MOD_POLYNOM: Polynom64 = 0x3DA3358B4DC173;
+pub const MOD_POLYNOM: Polynom64 = 17437180132763653;
 
 impl Polynom for Polynom64 {
     // The degree of the polynom.
