@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.0.1](https://www.github.com/Gozala/rabin-wasm/compare/v1.0.0...v1.0.1) (2022-03-04)
+
+
+### Bug Fixes
+
+* include lib module ([#7](https://www.github.com/Gozala/rabin-wasm/issues/7)) ([e2d5acb](https://www.github.com/Gozala/rabin-wasm/commit/e2d5acbc17d79faed543147963aa32a708eb259d))
+
 ## [1.0.0](https://www.github.com/Gozala/rabin-wasm/compare/v0.1.5...v1.0.0) (2022-03-04)
 
 
