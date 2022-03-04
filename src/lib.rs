@@ -1,7 +1,6 @@
 #![feature(int_log)]
 mod chunker;
 mod polynom;
-mod util;
 
 pub use chunker::Rabin;
 use wasm_bindgen::prelude::*;
@@ -25,7 +24,7 @@ pub fn new_with_polynom(
     max_size: usize,
     window_size: usize,
 ) -> Rabin {
-    Rabin::new_with_polynom(&mod_polynom, avg_size, min_size, max_size, window_size)
+    Rabin::create_with_polynom(&mod_polynom, avg_size, min_size, max_size, window_size)
 }
 
 #[wasm_bindgen]

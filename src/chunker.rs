@@ -42,16 +42,16 @@ pub struct Rabin {
 
 impl Default for Rabin {
     fn default() -> Self {
-        Self::new_with_polynom(&MOD_POLYNOM, AVG_SIZE, MIN_SIZE, MAX_SIZE, WINDOW_SIZE)
+        Self::create_with_polynom(&MOD_POLYNOM, AVG_SIZE, MIN_SIZE, MAX_SIZE, WINDOW_SIZE)
     }
 }
 
 impl Rabin {
     pub fn create(bits: usize, min_size: usize, max_size: usize, window_size: usize) -> Self {
-        Self::new_with_polynom(&MOD_POLYNOM, bits, min_size, max_size, window_size)
+        Self::create_with_polynom(&MOD_POLYNOM, bits, min_size, max_size, window_size)
     }
     pub fn new(avg_size: usize, min_size: usize, max_size: usize, window_size: usize) -> Self {
-        Self::new_with_polynom(
+        Self::create_with_polynom(
             &MOD_POLYNOM,
             avg_size.log2() as usize,
             min_size,
@@ -59,7 +59,7 @@ impl Rabin {
             window_size,
         )
     }
-    pub fn new_with_polynom(
+    pub fn create_with_polynom(
         mod_polynom: &Polynom64,
         bits: usize,
         min_size: usize,
