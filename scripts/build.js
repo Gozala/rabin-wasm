@@ -21,7 +21,17 @@ const main = async () => {
   console.log("Edit wasm.js")
 
   await editFile("./gen/wasm.js", async bytes => {
-    return Buffer.concat([await readFile("./template/wasm.js"), bytes])
+    let code = bytes
+      .toString()
+      .replace(
+        FRAGMENT,
+        `    const { instance, module } = await load(input, imports)\n`
+      )
+
+    return Buffer.concat([
+      await readFile("./template/wasm.js"),
+      Buffer.from(code),
+    ])
   })
 
   await Promise.all([
@@ -32,6 +42,15 @@ const main = async () => {
   ])
 }
 
+let FRAGMENT = `
+    if (typeof input === 'string' || (typeof Request === 'function' && input instanceof Request) || (typeof URL === 'function' && input instanceof URL)) {
+        input = fetch(input);
+    }
+
+
+
+    const { instance, module } = await load(await input, imports);
+`
 /**
  * @param {string} path
  * @param {(content:Buffer) => Promise<Uint8Array|string>|Uint8Array|string} edit
