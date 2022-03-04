@@ -30,6 +30,8 @@ web-sys = { version = "0.3.56", features = ["console"] }
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"
 getrandom = { version = "0.2", features = ["js"] }
+zstd = "0.10.0+zstd.1.5.2"
+sha2 = "0.10.2"
 
 
 [profile.release]

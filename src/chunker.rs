@@ -111,7 +111,11 @@ impl Rabin {
             window_index: 0,
 
             digest: 0,
-            min_sans_preheat: min_size - window_size,
+            min_sans_preheat: if min_size < window_size {
+                0
+            } else {
+                min_size - window_size
+            },
             init,
             target_value: 0,
         };
