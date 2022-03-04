@@ -1,13 +1,13 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
-* @param {number} avg_bits
+* @param {number} bits
 * @param {number} min_size
 * @param {number} max_size
 * @param {number} window_size
 * @returns {Rabin}
 */
-export function create(avg_bits: number, min_size: number, max_size: number, window_size: number): Rabin;
+export function create(bits: number, min_size: number, max_size: number, window_size: number): Rabin;
 /**
 * @param {BigInt} mod_polynom
 * @param {number} avg_size

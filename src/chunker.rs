@@ -30,7 +30,7 @@ pub struct Rabin {
     mask: u64,
 
     // Precalculations
-    polynom_shift: i32,
+    polynom_shift: usize,
     out_table: [Polynom64; 256],
     mod_table: [Polynom64; 256],
 
@@ -38,6 +38,10 @@ pub struct Rabin {
     window_data: Vec<u8>,
     window_index: usize,
     digest: Polynom64,
+
+    init: u64,
+    min_sans_preheat: usize,
+    target_value: u64,
 }
 
 impl Default for Rabin {
@@ -83,17 +87,22 @@ impl Rabin {
     ) -> Self {
         let out_table = Self::calculate_out_table(window_size, mod_polynom);
         let mod_table = Self::calculate_mod_table(mod_polynom);
+        let polynom_shift = (mod_polynom.degree() - 8) as usize;
+        let mask = (1 << bits) - 1;
+
+        let init =
+            ((out_table[0] << 8) | 1) ^ (mod_table[(out_table[0] >> polynom_shift) as usize]);
 
         let mut window_data = Vec::with_capacity(window_size);
         window_data.resize(window_size, 0);
 
-        let mut rabin = Rabin {
+        let rabin = Rabin {
             min_size: min_size,
             max_size: max_size,
 
             window_size: window_size,
-            mask: (1 << bits) - 1,
-            polynom_shift: mod_polynom.degree() - 8,
+            mask: mask,
+            polynom_shift: polynom_shift,
 
             out_table: out_table,
             mod_table: mod_table,
@@ -102,9 +111,12 @@ impl Rabin {
             window_index: 0,
 
             digest: 0,
+            min_sans_preheat: min_size - window_size,
+            init,
+            target_value: 0,
         };
 
-        rabin.reset();
+        // rabin.reset();
 
         rabin
     }
@@ -135,73 +147,132 @@ impl Rabin {
             mod_table[b] = p.modulo(mod_polynom) | p;
         }
 
-        log!("!!!!!{}", &"Hello, world!");
-
         mod_table
     }
 
-    fn append(&mut self, byte: &u8) {
-        let index = self.digest >> self.polynom_shift; // & 255;
+    // fn append(&mut self, byte: &u8) {
+    //     let index = self.digest >> self.polynom_shift & 255;
 
-        self.digest = ((self.digest << 8) | *byte as u64) ^ self.mod_table[index as usize];
+    //     self.digest = ((self.digest << 8) | *byte as u64) ^ self.mod_table[index as usize];
 
-        // self.digest <<= 8;
-        // self.digest |= *byte as u64;
-        // self.digest ^= self.mod_table[mod_index as usize];
-    }
+    //     // self.digest <<= 8;
+    //     // self.digest |= *byte as u64;
+    //     // self.digest ^= self.mod_table[index as usize];
+    // }
 
-    fn slide(&mut self, byte: &u8) {
-        // Take the old value out of the window and the hash.
-        let out = self.window_data[self.window_index];
+    // fn slide(&mut self, byte: &u8) {
+    //     // Take the old value out of the window and the hash.
+    //     let out = self.window_data[self.window_index];
 
-        // Put the new value in the window and in the hash.
-        self.window_data[self.window_index] = *byte;
+    //     // Put the new value in the window and in the hash.
+    //     self.window_data[self.window_index] = *byte;
 
-        self.digest ^= self.out_table[out as usize];
-        self.append(byte);
+    //     self.digest ^= self.out_table[out as usize];
+    //     self.append(byte);
 
-        // Move the windowIndex to the next position.
-        self.window_index = (self.window_index + 1) % self.window_size;
-    }
+    //     // Move the windowIndex to the next position.
+    //     self.window_index = (self.window_index + 1) % self.window_size;
+    // }
 
-    fn reset(&mut self) {
-        self.window_data.clear();
-        self.window_data.resize(self.window_size, 0);
+    // fn reset(&mut self) {
+    //     self.window_data.clear();
+    //     self.window_data.resize(self.window_size, 0);
 
-        self.digest = 0;
-        self.window_index = 0;
+    //     self.digest = 0;
+    //     self.window_index = 0;
 
-        self.slide(&1);
-    }
+    //     self.slide(&1);
+    // }
 
-    fn find(&mut self, buffer: &[u8], offset: usize) -> i32 {
-        let size = buffer.len() - offset;
-        for n in 0..size {
-            self.slide(&buffer[offset + n]);
-            let count = n + 1;
+    // fn find(&mut self, buffer: &[u8], offset: usize) -> i32 {
+    //     let size = buffer.len() - offset;
+    //     for n in 0..size {
+    //         self.slide(&buffer[offset + n]);
+    //         let count = n + 1;
 
-            if (count >= self.min_size && ((self.digest & self.mask) == 0))
-                || count >= self.max_size
-            {
-                self.reset();
-                return count as i32;
-            }
-        }
+    //         if (count >= self.min_size && ((self.digest & self.mask) == 0))
+    //             || count >= self.max_size
+    //         {
+    //             self.reset();
+    //             return count as i32;
+    //         }
+    //     }
 
-        return -1;
-    }
+    //     return -1;
+    // }
 
-    pub fn cuts(&mut self, buffer: &[u8]) -> Vec<i32> {
+    // pub fn cuts(&mut self, buffer: &[u8]) -> Vec<i32> {
+    //     let mut cuts = Vec::new();
+    //     let mut offset = 0;
+    //     loop {
+    //         let size = self.find(buffer, offset);
+    //         if size <= 0 {
+    //             break cuts;
+    //         } else {
+    //             offset += size as usize;
+    //             cuts.push(size);
+    //         }
+    //     }
+    // }
+
+    pub fn split(&mut self, buffer: &[u8], use_all: bool) -> Vec<i32> {
+        let post_buf_idx = buffer.len();
+
+        let mut state;
+        let mut cur_idx = 0;
+        let mut last_idx;
+        let mut next_round_max;
         let mut cuts = Vec::new();
-        let mut offset = 0;
         loop {
-            let size = self.find(buffer, offset);
-            if size <= 0 {
-                break cuts;
-            } else {
-                offset += size as usize;
-                cuts.push(size);
+            last_idx = cur_idx;
+            next_round_max = last_idx + self.max_size;
+
+            // we will be running out of data, but still *could* run a round
+            if next_round_max > post_buf_idx {
+                // abort early if we are allowed to
+                if !use_all {
+                    return cuts;
+                }
+                // otherwise signify where we stop hard
+                next_round_max = post_buf_idx
             }
+
+            // in case we will *NOT* be able to run another round at all
+            if cur_idx + self.min_size >= post_buf_idx {
+                if use_all && post_buf_idx != cur_idx {
+                    cuts.push((post_buf_idx - cur_idx) as i32);
+                }
+                return cuts;
+            }
+
+            // reset
+            state = self.init;
+
+            // preheat
+            cur_idx += self.min_sans_preheat;
+            for i in 1..self.window_size + 1 {
+                if i == self.window_size {
+                    state ^= self.out_table[1];
+                } else {
+                    state ^= self.out_table[0];
+                }
+
+                state = ((state << 8) | buffer[cur_idx] as u64)
+                    ^ self.mod_table[(state >> self.polynom_shift) as usize];
+
+                cur_idx += 1;
+            }
+
+            // cycle
+            while cur_idx < next_round_max && ((state & self.mask) != self.target_value) {
+                state ^= self.out_table[buffer[cur_idx - self.window_size] as usize];
+                state = ((state << 8) | buffer[cur_idx] as u64)
+                    ^ self.mod_table[(state >> self.polynom_shift) as usize];
+
+                cur_idx += 1;
+            }
+
+            cuts.push((cur_idx - last_idx) as i32);
         }
     }
 }

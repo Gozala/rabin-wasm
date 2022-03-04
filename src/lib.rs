@@ -12,8 +12,8 @@ use wasm_bindgen::prelude::*;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
-pub fn create(avg_bits: usize, min_size: usize, max_size: usize, window_size: usize) -> Rabin {
-    Rabin::create(avg_bits, min_size, max_size, window_size)
+pub fn create(bits: usize, min_size: usize, max_size: usize, window_size: usize) -> Rabin {
+    Rabin::create(bits, min_size, max_size, window_size)
 }
 
 #[wasm_bindgen]
@@ -24,10 +24,10 @@ pub fn new_with_polynom(
     max_size: usize,
     window_size: usize,
 ) -> Rabin {
-    Rabin::create_with_polynom(&mod_polynom, avg_size, min_size, max_size, window_size)
+    Rabin::new_with_polynom(&mod_polynom, avg_size, min_size, max_size, window_size)
 }
 
 #[wasm_bindgen]
 pub fn cut(rabin: &mut Rabin, bytes: &[u8]) -> Vec<i32> {
-    rabin.cuts(bytes)
+    rabin.split(bytes, true)
 }

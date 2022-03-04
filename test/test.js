@@ -76,7 +76,7 @@ describe("rabin", () => {
     assert.deepEqual([...cut(r, bytes)], [366598, 239921, 260915])
   })
 
-  it("compat test", async () => {
+  it.only("compat test", async () => {
     const bytes = await sharbage(524288)
     console.log(bytes.byteLength)
 
