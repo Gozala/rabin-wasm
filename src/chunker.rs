@@ -1,6 +1,14 @@
 use crate::polynom::{Polynom, Polynom64, MOD_POLYNOM};
 use wasm_bindgen::prelude::*;
 
+#[macro_export]
+// A macro to provide `println!(..)`-style syntax for `console.log` logging.
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
 // As per
 // https://github.com/whyrusleeping/chunker/blob/fe64bd25879f446bb7e8a4adf5d4a68552211bd3/chunker.go#L12-L26
 const KIB: usize = 1024;
@@ -39,42 +47,28 @@ impl Default for Rabin {
 }
 
 impl Rabin {
-    pub fn create(avg_bits: usize, min_size: usize, max_size: usize, window_size: usize) -> Self {
-        let mod_polynom = &MOD_POLYNOM;
-        let mut window_data = Vec::with_capacity(window_size);
-        window_data.resize(window_size, 0);
-
-        let mut rabin = Rabin {
-            min_size: min_size,
-            max_size: max_size,
-
-            window_size: window_size,
-            mask: (1 << avg_bits) - 1,
-            polynom_shift: mod_polynom.degree() - 8,
-
-            out_table: Self::calculate_out_table(window_size, mod_polynom),
-            mod_table: Self::calculate_mod_table(mod_polynom),
-
-            window_data: window_data,
-            window_index: 0,
-
-            digest: 0,
-        };
-
-        rabin.reset();
-
-        rabin
+    pub fn create(bits: usize, min_size: usize, max_size: usize, window_size: usize) -> Self {
+        Self::new_with_polynom(&MOD_POLYNOM, bits, min_size, max_size, window_size)
     }
     pub fn new(avg_size: usize, min_size: usize, max_size: usize, window_size: usize) -> Self {
-        Self::new_with_polynom(&MOD_POLYNOM, avg_size, min_size, max_size, window_size)
+        Self::new_with_polynom(
+            &MOD_POLYNOM,
+            avg_size.log2() as usize,
+            min_size,
+            max_size,
+            window_size,
+        )
     }
     pub fn new_with_polynom(
         mod_polynom: &Polynom64,
-        avg_size: usize,
+        bits: usize,
         min_size: usize,
         max_size: usize,
         window_size: usize,
     ) -> Self {
+        let out_table = Self::calculate_out_table(window_size, mod_polynom);
+        let mod_table = Self::calculate_mod_table(mod_polynom);
+
         let mut window_data = Vec::with_capacity(window_size);
         window_data.resize(window_size, 0);
 
@@ -83,11 +77,11 @@ impl Rabin {
             max_size: max_size,
 
             window_size: window_size,
-            mask: (1 << avg_size.log2()) - 1,
+            mask: (1 << bits) - 1,
             polynom_shift: mod_polynom.degree() - 8,
 
-            out_table: Self::calculate_out_table(window_size, mod_polynom),
-            mod_table: Self::calculate_mod_table(mod_polynom),
+            out_table: out_table,
+            mod_table: mod_table,
 
             window_data: window_data,
             window_index: 0,
@@ -125,6 +119,8 @@ impl Rabin {
             let p = (b as u64) << k;
             mod_table[b] = p.modulo(mod_polynom) | p;
         }
+
+        log!("!!!!!{}", &"Hello, world!");
 
         mod_table
     }

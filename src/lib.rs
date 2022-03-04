@@ -1,6 +1,7 @@
 #![feature(int_log)]
 mod chunker;
 mod polynom;
+mod util;
 
 pub use chunker::Rabin;
 use wasm_bindgen::prelude::*;
