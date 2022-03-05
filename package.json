@@ -1,6 +1,6 @@
 {
   "name": "rabin-rs",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Rabin chunker for IPFS implementation in Rust",
   "keywords": [
     "rabin",

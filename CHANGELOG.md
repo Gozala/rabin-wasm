@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://www.github.com/Gozala/rabin-wasm/compare/v1.0.1...v1.1.0) (2022-03-05)
+
+
+### Features
+
+* compatibility with go-ipfs & DAGger ([#10](https://www.github.com/Gozala/rabin-wasm/issues/10)) ([8151535](https://www.github.com/Gozala/rabin-wasm/commit/815153511fa4c50aed3bf5d977c816ec5d86b7d2))
+
 ### [1.0.1](https://www.github.com/Gozala/rabin-wasm/compare/v1.0.0...v1.0.1) (2022-03-04)
 
 
