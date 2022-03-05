@@ -122,6 +122,54 @@ export class Rabin {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_rabin_free(ptr);
     }
+    /**
+    */
+    get min_size() {
+        var ret = wasm.__wbg_get_rabin_min_size(this.ptr);
+        return ret >>> 0;
+    }
+    /**
+    * @param {number} arg0
+    */
+    set min_size(arg0) {
+        wasm.__wbg_set_rabin_min_size(this.ptr, arg0);
+    }
+    /**
+    */
+    get max_size() {
+        var ret = wasm.__wbg_get_rabin_max_size(this.ptr);
+        return ret >>> 0;
+    }
+    /**
+    * @param {number} arg0
+    */
+    set max_size(arg0) {
+        wasm.__wbg_set_rabin_max_size(this.ptr, arg0);
+    }
+    /**
+    */
+    get window_size() {
+        var ret = wasm.__wbg_get_rabin_window_size(this.ptr);
+        return ret >>> 0;
+    }
+    /**
+    * @param {number} arg0
+    */
+    set window_size(arg0) {
+        wasm.__wbg_set_rabin_window_size(this.ptr, arg0);
+    }
+    /**
+    */
+    get polynom_shift() {
+        var ret = wasm.__wbg_get_rabin_polynom_shift(this.ptr);
+        return ret >>> 0;
+    }
+    /**
+    * @param {number} arg0
+    */
+    set polynom_shift(arg0) {
+        wasm.__wbg_set_rabin_polynom_shift(this.ptr, arg0);
+    }
 }
 
 async function load(module, imports) {

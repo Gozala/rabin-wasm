@@ -13,7 +13,13 @@ let wait = Rabin.activate().then(() => {
  * @param {number} windowSize
  */
 export const create = (bits, minSize, maxSize, windowSize) =>
-  wait.then(() => Rabin.create(bits, minSize, maxSize, windowSize))
+  wait.then(() => {
+    const rabin = Rabin.create(bits, minSize, maxSize, windowSize)
+    rabin.maxSize = maxSize
+    rabin.minSize = minSize
+    rabin.windowSize = windowSize
+    return rabin
+  })
 
 /**
  * @param {number} bits
@@ -28,10 +34,31 @@ export const createWithPolynom = (
   maxSize,
   windowSize
 ) =>
-  wait.then(() =>
-    Rabin.createWithPolynomial(polynom, bits, minSize, maxSize, windowSize)
-  )
+  wait.then(() => {
+    const rabin = Rabin.createWithPolynomial(
+      polynom,
+      bits,
+      minSize,
+      maxSize,
+      windowSize
+    )
+    rabin.maxSize = maxSize
+    rabin.minSize = minSize
+    rabin.windowSize = windowSize
+    return rabin
+  })
 
-export const cut = Rabin.cut
-const Type = Rabin.Rabin
-export { Type as Rabin }
+/**
+ *
+ * @param {Rabin} rabin
+ * @param {Uint8Array} bytes
+ * @param {boolean} [end=false]
+ */
+export const cut = (rabin, bytes, end = false) =>
+  // If we have less then `maxSize` of bytes & it's not the end, there is no
+  // point to copy bytes into wasm as we'll get no chunks.
+  !end & (bytes.byteLength < rabin.maxSize)
+    ? none
+    : Rabin.cut(rabin, bytes, end)
+
+const none = new Uint32Array(0)

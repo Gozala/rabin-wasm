@@ -1,6 +1,10 @@
-import { Rabin } from "./gen/wasm.js"
+import * as Lib from "./gen/wasm.js"
 
-export { Rabin }
+export interface Rabin extends Lib.Rabin {
+  readonly minSize: number
+  readonly maxSize: number
+  readonly windowSize: number
+}
 
 export function create(
   bits: number,

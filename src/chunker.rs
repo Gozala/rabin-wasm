@@ -34,11 +34,6 @@ pub struct Rabin {
     out_table: [Polynom64; 256],
     mod_table: [Polynom64; 256],
 
-    // Current state
-    window_data: Vec<u8>,
-    window_index: usize,
-    digest: Polynom64,
-
     init: u64,
     min_sans_preheat: usize,
     target_value: u64,
@@ -96,7 +91,7 @@ impl Rabin {
         let mut window_data = Vec::with_capacity(window_size);
         window_data.resize(window_size, 0);
 
-        let mut rabin = Rabin {
+        Rabin {
             min_size: min_size,
             max_size: max_size,
 
@@ -107,10 +102,6 @@ impl Rabin {
             out_table: out_table,
             mod_table: mod_table,
 
-            window_data: window_data,
-            window_index: 0,
-
-            digest: 0,
             min_sans_preheat: if min_size < window_size {
                 0
             } else {
@@ -118,11 +109,7 @@ impl Rabin {
             },
             init,
             target_value: 0,
-        };
-
-        rabin.reset();
-
-        rabin
+        }
     }
 
     fn calculate_out_table(window_size: usize, mod_polynom: &Polynom64) -> [Polynom64; 256] {
@@ -148,71 +135,6 @@ impl Rabin {
         }
 
         mod_table
-    }
-
-    fn append(&mut self, byte: &u8) {
-        let index = self.digest >> self.polynom_shift & 255;
-
-        self.digest = ((self.digest << 8) | *byte as u64) ^ self.mod_table[index as usize];
-
-        // self.digest <<= 8;
-        // self.digest |= *byte as u64;
-        // self.digest ^= self.mod_table[index as usize];
-    }
-
-    fn slide(&mut self, byte: &u8) {
-        // Take the old value out of the window and the hash.
-        let out = self.window_data[self.window_index];
-
-        // Put the new value in the window and in the hash.
-        self.window_data[self.window_index] = *byte;
-
-        self.digest ^= self.out_table[out as usize];
-        self.append(byte);
-
-        // Move the windowIndex to the next position.
-        self.window_index = (self.window_index + 1) % self.window_size;
-    }
-
-    fn reset(&mut self) {
-        self.window_data.clear();
-        self.window_data.resize(self.window_size, 0);
-
-        self.digest = 0;
-        self.window_index = 0;
-
-        self.slide(&1);
-    }
-
-    fn find(&mut self, buffer: &[u8], offset: usize) -> i32 {
-        let size = buffer.len() - offset;
-        for n in 0..size {
-            self.slide(&buffer[offset + n]);
-            let count = n + 1;
-
-            if (count >= self.min_size && ((self.digest & self.mask) == 0))
-                || count >= self.max_size
-            {
-                self.reset();
-                return count as i32;
-            }
-        }
-
-        return -1;
-    }
-
-    pub fn cuts(&mut self, buffer: &[u8]) -> Vec<i32> {
-        let mut cuts = Vec::new();
-        let mut offset = 0;
-        loop {
-            let size = self.find(buffer, offset);
-            if size <= 0 {
-                break cuts;
-            } else {
-                offset += size as usize;
-                cuts.push(size);
-            }
-        }
     }
 
     pub fn split(&self, buffer: &[u8], use_all: bool) -> Vec<i32> {
