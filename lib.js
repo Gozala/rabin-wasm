@@ -1,36 +1,64 @@
-import {
-  activate,
-  Rabin,
-  cut,
-  new_with_polynom,
-  create as without_polynom,
-} from "./gen/wasm.js"
+import * as Rabin from "./gen/wasm.js"
 
-let wait = activate().then(() => {
+let wait = Rabin.activate().then(() => {
   wait = {
     then: fn => fn(),
   }
 })
 
 /**
- * @param {number} avgBits
+ * @param {number} bits
  * @param {number} minSize
  * @param {number} maxSize
  * @param {number} windowSize
  */
-export const create = (avgBits, minSize, maxSize, windowSize) =>
-  wait.then(() => without_polynom(avgBits, minSize, maxSize, windowSize))
+export const create = (bits, minSize, maxSize, windowSize) =>
+  wait.then(() => {
+    const rabin = Rabin.create(bits, minSize, maxSize, windowSize)
+    rabin.maxSize = maxSize
+    rabin.minSize = minSize
+    rabin.windowSize = windowSize
+    return rabin
+  })
 
 /**
- * @param {BigInt} polynom
- * @param {number} avgSize
+ * @param {number} bits
  * @param {number} minSize
  * @param {number} maxSize
  * @param {number} windowSize
  */
-export const withPolynom = (polynom, avgSize, minSize, maxSize, windowSize) =>
-  wait.then(() =>
-    new_with_polynom(polynom, avgSize, minSize, maxSize, windowSize)
-  )
+export const createWithPolynom = (
+  polynom,
+  bits,
+  minSize,
+  maxSize,
+  windowSize
+) =>
+  wait.then(() => {
+    const rabin = Rabin.createWithPolynomial(
+      polynom,
+      bits,
+      minSize,
+      maxSize,
+      windowSize
+    )
+    rabin.maxSize = maxSize
+    rabin.minSize = minSize
+    rabin.windowSize = windowSize
+    return rabin
+  })
 
-export { Rabin, cut }
+/**
+ *
+ * @param {Rabin} rabin
+ * @param {Uint8Array} bytes
+ * @param {boolean} [end=false]
+ */
+export const cut = (rabin, bytes, end = false) =>
+  // If we have less then `maxSize` of bytes & it's not the end, there is no
+  // point to copy bytes into wasm as we'll get no chunks.
+  !end & (bytes.byteLength < rabin.maxSize)
+    ? none
+    : Rabin.cut(rabin, bytes, end)
+
+const none = new Uint32Array(0)

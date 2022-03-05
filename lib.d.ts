@@ -1,20 +1,24 @@
-import { Rabin } from "./gen/wasm.js"
+import * as Lib from "./gen/wasm.js"
 
-export { Rabin }
+export interface Rabin extends Lib.Rabin {
+  readonly minSize: number
+  readonly maxSize: number
+  readonly windowSize: number
+}
 
 export function create(
-  avgBits: number,
+  bits: number,
   minSize: number,
   maxSize: number,
   windowSize: number
 ): Rabin | Promise<Rabin>
 
-export function withPolynom(
+export function createWithPolynom(
   polynom: BigInt,
-  avgSize: number,
+  bits: number,
   minSize: number,
   maxSize: number,
   windowSize: number
 ): Rabin | Promise<Rabin>
 
-export function cut(rabin: Rabin, bytes: Uint8Array): Int32Array
+export function cut(rabin: Rabin, bytes: Uint8Array, end: boolean): Int32Array

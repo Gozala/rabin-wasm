@@ -1,20 +1,6 @@
 import bytecode from "./bytecode.js"
 
-export const activate = async () => {
-  const imports = {}
-  imports.wbg = {}
-
-  imports.wbg.__wbindgen_throw = function (arg0, arg1) {
-    throw new Error(getStringFromWasm0(arg0, arg1))
-  }
-
-  const { instance, module } = await load(bytecode, imports)
-
-  wasm = instance.exports
-  init.__wbindgen_wasm_module = module
-
-  return wasm
-}
+export const activate = () => init(bytecode)
 
 let wasm;
 
@@ -34,14 +20,14 @@ function getStringFromWasm0(ptr, len) {
     return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
 }
 /**
-* @param {number} avg_bits
+* @param {number} bits
 * @param {number} min_size
 * @param {number} max_size
 * @param {number} window_size
 * @returns {Rabin}
 */
-export function create(avg_bits, min_size, max_size, window_size) {
-    var ret = wasm.create(avg_bits, min_size, max_size, window_size);
+export function create(bits, min_size, max_size, window_size) {
+    var ret = wasm.create(bits, min_size, max_size, window_size);
     return Rabin.__wrap(ret);
 }
 
@@ -50,17 +36,17 @@ const u32CvtShim = new Uint32Array(2);
 const uint64CvtShim = new BigUint64Array(u32CvtShim.buffer);
 /**
 * @param {BigInt} mod_polynom
-* @param {number} avg_size
+* @param {number} bits
 * @param {number} min_size
 * @param {number} max_size
 * @param {number} window_size
 * @returns {Rabin}
 */
-export function new_with_polynom(mod_polynom, avg_size, min_size, max_size, window_size) {
+export function createWithPolynomial(mod_polynom, bits, min_size, max_size, window_size) {
     uint64CvtShim[0] = mod_polynom;
     const low0 = u32CvtShim[0];
     const high0 = u32CvtShim[1];
-    var ret = wasm.new_with_polynom(low0, high0, avg_size, min_size, max_size, window_size);
+    var ret = wasm.createWithPolynomial(low0, high0, bits, min_size, max_size, window_size);
     return Rabin.__wrap(ret);
 }
 
@@ -94,15 +80,16 @@ function getArrayI32FromWasm0(ptr, len) {
 /**
 * @param {Rabin} rabin
 * @param {Uint8Array} bytes
+* @param {boolean} end
 * @returns {Int32Array}
 */
-export function cut(rabin, bytes) {
+export function cut(rabin, bytes, end) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         _assertClass(rabin, Rabin);
         var ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
-        wasm.cut(retptr, rabin.ptr, ptr0, len0);
+        wasm.cut(retptr, rabin.ptr, ptr0, len0, end);
         var r0 = getInt32Memory0()[retptr / 4 + 0];
         var r1 = getInt32Memory0()[retptr / 4 + 1];
         var v1 = getArrayI32FromWasm0(r0, r1).slice();
@@ -134,6 +121,54 @@ export class Rabin {
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_rabin_free(ptr);
+    }
+    /**
+    */
+    get min_size() {
+        var ret = wasm.__wbg_get_rabin_min_size(this.ptr);
+        return ret >>> 0;
+    }
+    /**
+    * @param {number} arg0
+    */
+    set min_size(arg0) {
+        wasm.__wbg_set_rabin_min_size(this.ptr, arg0);
+    }
+    /**
+    */
+    get max_size() {
+        var ret = wasm.__wbg_get_rabin_max_size(this.ptr);
+        return ret >>> 0;
+    }
+    /**
+    * @param {number} arg0
+    */
+    set max_size(arg0) {
+        wasm.__wbg_set_rabin_max_size(this.ptr, arg0);
+    }
+    /**
+    */
+    get window_size() {
+        var ret = wasm.__wbg_get_rabin_window_size(this.ptr);
+        return ret >>> 0;
+    }
+    /**
+    * @param {number} arg0
+    */
+    set window_size(arg0) {
+        wasm.__wbg_set_rabin_window_size(this.ptr, arg0);
+    }
+    /**
+    */
+    get polynom_shift() {
+        var ret = wasm.__wbg_get_rabin_polynom_shift(this.ptr);
+        return ret >>> 0;
+    }
+    /**
+    * @param {number} arg0
+    */
+    set polynom_shift(arg0) {
+        wasm.__wbg_set_rabin_polynom_shift(this.ptr, arg0);
     }
 }
 
@@ -177,14 +212,7 @@ async function init(input) {
     imports.wbg.__wbindgen_throw = function(arg0, arg1) {
         throw new Error(getStringFromWasm0(arg0, arg1));
     };
-
-    if (typeof input === 'string' || (typeof Request === 'function' && input instanceof Request) || (typeof URL === 'function' && input instanceof URL)) {
-        input = fetch(input);
-    }
-
-
-
-    const { instance, module } = await load(await input, imports);
+    const { instance, module } = await load(input, imports)
 
     wasm = instance.exports;
     init.__wbindgen_wasm_module = module;

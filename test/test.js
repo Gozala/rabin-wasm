@@ -1,7 +1,7 @@
-"use strict"
+// @ts-check
 
-import { encodeUTF8, read } from "./util.js"
-import { create, cut, withPolynom } from "../lib.js"
+import { encodeUTF8, read, sharbage } from "./util.js"
+import { create, cut, createWithPolynom } from "../lib.js"
 import { assert } from "chai"
 import * as FZSTD from "fzstd"
 
@@ -9,21 +9,30 @@ describe("rabin", () => {
   it("chunks for 1MiB.txt", async () => {
     const prefix = await read("./1MiB.txt")
     const suffix = encodeUTF8("hello")
-    const bytes = new Uint8Array(prefix.byteLength + suffix.byteLength)
-    bytes.set(prefix, 0)
-    bytes.set(suffix, prefix.byteLength)
+    const buffer = new Uint8Array(prefix.byteLength + suffix.byteLength)
+    buffer.set(prefix, 0)
+    buffer.set(suffix, prefix.byteLength)
 
     const rabin = await create(18, 87381.33333333333, 393216, 64)
-    const sizes = cut(rabin, bytes)
-    assert.deepEqual([...sizes], [366598, 239921, 260915])
+
+    assert.deepEqual(
+      [...cut(rabin, buffer, false)],
+      [353816, 112050, 147806, 393216]
+    )
+    assert.deepEqual(
+      [...cut(rabin, buffer, true)],
+      [353816, 112050, 147806, 393216, 41693]
+    )
   })
 
+  // @see https://github.com/ribasushi/DAGger/issues/1
   it("shoud be empty", async () => {
-    const b1 = new Uint8Array(10 * 256)
-    b1.fill("a".charCodeAt(0))
-    const r = await create(8, 18, 262144, 64)
-    const sizes = cut(r, b1)
-    assert.deepEqual([...sizes], [])
+    const buffer = new Uint8Array(10 * 256)
+    buffer.fill("a".charCodeAt(0))
+
+    const rabin = await create(8, 18, 262144, 64)
+    assert.deepEqual([...cut(rabin, buffer, false)], [])
+    assert.deepEqual([...cut(rabin, buffer, true)], [buffer.byteLength])
   })
 
   it("shoud respect window size", async () => {
@@ -40,38 +49,66 @@ describe("rabin", () => {
     buffer.set(b3, b1.byteLength + b2.byteLength)
 
     const rabin = await create(6, 48, 192, 64)
-    const sizes = cut(rabin, buffer)
     assert.deepEqual(
-      [...sizes],
-      [192, 192, 192, 65, 192, 192, 192, 192, 192, 192]
+      [...cut(rabin, buffer, true)],
+      [192, 192, 157, 64, 78, 192, 192, 192, 192, 192, 192, 76]
     )
   })
 
   it("chunks for rand_5MiB.zst", async () => {
-    const bytes = FZSTD.decompress(await read("./rand_5MiB.zst"))
-    const r = await withPolynom(17437180132763653n, 524288, 262144, 1048576, 16)
-    const sizes = cut(r, bytes)
+    const buffer = FZSTD.decompress(await read("./rand_5MiB.zst"))
+
+    const rabin = await createWithPolynom(
+      17437180132763653n,
+      Math.log2(524288),
+      262144,
+      1048576,
+      16
+    )
+
     assert.deepEqual(
-      [...sizes],
+      [...cut(rabin, buffer, false)],
       [895059, 686255, 467859, 626819, 280748, 310603, 734239, 499556]
     )
 
     assert.deepEqual(
-      bytes.byteLength,
-      sizes.reduce((t, n) => t + n, 741742)
+      [...cut(rabin, buffer, true)],
+      [895059, 686255, 467859, 626819, 280748, 310603, 734239, 499556, 741742]
     )
   })
 
   it("is stateless", async () => {
     const prefix = await read("./1MiB.txt")
     const suffix = encodeUTF8("hello")
-    const bytes = new Uint8Array(prefix.byteLength + suffix.byteLength)
-    bytes.set(prefix, 0)
-    bytes.set(suffix, prefix.byteLength)
+    const buffer = new Uint8Array(prefix.byteLength + suffix.byteLength)
+    buffer.set(prefix, 0)
+    buffer.set(suffix, prefix.byteLength)
 
-    const r = await create(18, 87381.33333333333, 393216, 64)
+    const rabin = await create(18, 87381.33333333333, 393216, 64)
 
-    assert.deepEqual([...cut(r, bytes.slice(0, 736976))], [366598, 239921])
-    assert.deepEqual([...cut(r, bytes)], [366598, 239921, 260915])
+    assert.deepEqual([...cut(rabin, buffer.slice(0, 736976), false)], [353816])
+
+    assert.deepEqual(
+      [...cut(rabin, buffer.slice(0, 736976), true)],
+      [353816, 112050, 147806, /* remainder*/ 123304]
+    )
+
+    assert.deepEqual(
+      [...cut(rabin, buffer, false)],
+      [353816, 112050, 147806, 393216]
+    )
+    assert.deepEqual(
+      [...cut(rabin, buffer, true)],
+      [353816, 112050, 147806, 393216, 41693]
+    )
+  })
+
+  it("compat test", async () => {
+    const buffer = await sharbage(524288)
+
+    const rabin = await create(18, 87381, 393216, 16)
+
+    assert.deepEqual([...cut(rabin, buffer, false)], [189236])
+    assert.deepEqual([...cut(rabin, buffer, true)], [189236, 177457, 157595])
   })
 })
