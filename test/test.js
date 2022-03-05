@@ -4,7 +4,6 @@ import { encodeUTF8, read, sharbage } from "./util.js"
 import { create, cut, createWithPolynom } from "../lib.js"
 import { assert } from "chai"
 import * as FZSTD from "fzstd"
-import * as FS from "fs"
 
 describe("rabin", () => {
   it("chunks for 1MiB.txt", async () => {
