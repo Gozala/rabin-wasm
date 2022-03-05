@@ -36,17 +36,17 @@ const u32CvtShim = new Uint32Array(2);
 const uint64CvtShim = new BigUint64Array(u32CvtShim.buffer);
 /**
 * @param {BigInt} mod_polynom
-* @param {number} avg_size
+* @param {number} bits
 * @param {number} min_size
 * @param {number} max_size
 * @param {number} window_size
 * @returns {Rabin}
 */
-export function new_with_polynom(mod_polynom, avg_size, min_size, max_size, window_size) {
+export function createWithPolynomial(mod_polynom, bits, min_size, max_size, window_size) {
     uint64CvtShim[0] = mod_polynom;
     const low0 = u32CvtShim[0];
     const high0 = u32CvtShim[1];
-    var ret = wasm.new_with_polynom(low0, high0, avg_size, min_size, max_size, window_size);
+    var ret = wasm.createWithPolynomial(low0, high0, bits, min_size, max_size, window_size);
     return Rabin.__wrap(ret);
 }
 
@@ -80,15 +80,16 @@ function getArrayI32FromWasm0(ptr, len) {
 /**
 * @param {Rabin} rabin
 * @param {Uint8Array} bytes
+* @param {boolean} end
 * @returns {Int32Array}
 */
-export function cut(rabin, bytes) {
+export function cut(rabin, bytes, end) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         _assertClass(rabin, Rabin);
         var ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
-        wasm.cut(retptr, rabin.ptr, ptr0, len0);
+        wasm.cut(retptr, rabin.ptr, ptr0, len0, end);
         var r0 = getInt32Memory0()[retptr / 4 + 0];
         var r1 = getInt32Memory0()[retptr / 4 + 1];
         var v1 = getArrayI32FromWasm0(r0, r1).slice();

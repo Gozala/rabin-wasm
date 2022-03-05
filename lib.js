@@ -1,36 +1,37 @@
-import {
-  activate,
-  Rabin,
-  cut,
-  new_with_polynom,
-  create as without_polynom,
-} from "./gen/wasm.js"
+import * as Rabin from "./gen/wasm.js"
 
-let wait = activate().then(() => {
+let wait = Rabin.activate().then(() => {
   wait = {
     then: fn => fn(),
   }
 })
 
 /**
- * @param {number} avgBits
+ * @param {number} bits
  * @param {number} minSize
  * @param {number} maxSize
  * @param {number} windowSize
  */
-export const create = (avgBits, minSize, maxSize, windowSize) =>
-  wait.then(() => without_polynom(avgBits, minSize, maxSize, windowSize))
+export const create = (bits, minSize, maxSize, windowSize) =>
+  wait.then(() => Rabin.create(bits, minSize, maxSize, windowSize))
 
 /**
- * @param {BigInt} polynom
- * @param {number} avgSize
+ * @param {number} bits
  * @param {number} minSize
  * @param {number} maxSize
  * @param {number} windowSize
  */
-export const withPolynom = (polynom, avgSize, minSize, maxSize, windowSize) =>
+export const createWithPolynom = (
+  polynom,
+  bits,
+  minSize,
+  maxSize,
+  windowSize
+) =>
   wait.then(() =>
-    new_with_polynom(polynom, avgSize, minSize, maxSize, windowSize)
+    Rabin.createWithPolynomial(polynom, bits, minSize, maxSize, windowSize)
   )
 
-export { Rabin, cut }
+export const cut = Rabin.cut
+const Type = Rabin.Rabin
+export { Type as Rabin }

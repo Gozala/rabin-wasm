@@ -215,7 +215,7 @@ impl Rabin {
         }
     }
 
-    pub fn split(&mut self, buffer: &[u8], use_all: bool) -> Vec<i32> {
+    pub fn split(&self, buffer: &[u8], use_all: bool) -> Vec<i32> {
         let post_buf_idx = buffer.len();
 
         let mut state;

@@ -34,6 +34,10 @@ const main = async () => {
     ])
   })
 
+  await editFile("./gen/wasm.d.ts", async bytes =>
+    Buffer.concat([bytes, await readFile("./template/wasm.d.ts")])
+  )
+
   await Promise.all([
     deleteFile("./gen/.gitignore"),
     deleteFile("./gen/package.json"),

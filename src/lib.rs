@@ -16,20 +16,20 @@ pub fn create(bits: usize, min_size: usize, max_size: usize, window_size: usize)
     Rabin::create(bits, min_size, max_size, window_size)
 }
 
-#[wasm_bindgen]
-pub fn new_with_polynom(
+#[wasm_bindgen(js_name=createWithPolynomial)]
+pub fn configure_with_polynom(
     mod_polynom: u64,
-    avg_size: usize,
+    bits: usize,
     min_size: usize,
     max_size: usize,
     window_size: usize,
 ) -> Rabin {
-    Rabin::new_with_polynom(&mod_polynom, avg_size, min_size, max_size, window_size)
+    Rabin::create_with_polynom(&mod_polynom, bits, min_size, max_size, window_size)
 }
 
 #[wasm_bindgen]
-pub fn cut(rabin: &mut Rabin, bytes: &[u8]) -> Vec<i32> {
-    rabin.split(bytes, false)
+pub fn cut(rabin: &Rabin, bytes: &[u8], end: bool) -> Vec<i32> {
+    rabin.split(bytes, end)
 }
 
 #[cfg(test)]
@@ -42,19 +42,25 @@ mod tests {
         let mut content = fs::read("./test/1MiB.txt").expect("failed to read file");
         content.append(&mut Vec::from("hello"));
 
-        let mut rabin = create(18, 87381, 393216, 64);
-        let sizes = cut(&mut rabin, &content);
+        let rabin = create(18, 87381, 393216, 64);
 
-        assert_eq!(sizes, [366598, 239921, 260915]);
+        assert_eq!(
+            cut(&rabin, &content, false),
+            [353816, 112050, 147806, 393216]
+        );
+        assert_eq!(
+            cut(&rabin, &content, true),
+            [353816, 112050, 147806, 393216, 41693]
+        );
     }
 
     #[test]
     fn should_be_empty() {
         let content = vec![b'a'; 10 * 256];
-        let mut rabin = create(8, 18, 262144, 64);
-        let sizes = cut(&mut rabin, &content);
+        let rabin = create(8, 18, 262144, 64);
 
-        assert_eq!(sizes, []);
+        assert_eq!(cut(&rabin, &content, false), []);
+        assert_eq!(cut(&rabin, &content, true), [10 * 256]);
     }
 
     #[test]
@@ -63,9 +69,11 @@ mod tests {
         buffer.append(&mut vec![b'b'; 119]);
         buffer.append(&mut vec![b'c'; 5 * 256]);
 
-        let mut rabin = create(6, 48, 192, 64);
-        let sizes = cut(&mut rabin, &buffer);
-        assert_eq!(sizes, [192, 192, 192, 65, 192, 192, 192, 192, 192, 192]);
+        let rabin = create(6, 48, 192, 64);
+        assert_eq!(
+            cut(&rabin, &buffer, true),
+            [192, 192, 157, 64, 78, 192, 192, 192, 192, 192, 192, 76]
+        );
     }
 
     #[test]
@@ -75,13 +83,17 @@ mod tests {
         let content = fs::read("./test/rand_5MiB.zst").expect("failed to read file");
         let buffer =
             zstd::bulk::decompress(&content, content.len() * 2).expect("failed to decompress");
-        let mut rabin = new_with_polynom(17437180132763653, 524288, 262144, 1048576, 16);
-        let sizes = cut(&mut rabin, &buffer);
+        let rabin = Rabin::new_with_polynom(&17437180132763653, 524288, 262144, 1048576, 16);
 
         assert_eq!(
-            sizes,
+            cut(&rabin, &buffer, false),
             [895059, 686255, 467859, 626819, 280748, 310603, 734239, 499556]
         );
+
+        assert_eq!(
+            cut(&rabin, &buffer, true),
+            [895059, 686255, 467859, 626819, 280748, 310603, 734239, 499556, 741742]
+        )
     }
 
     #[test]
@@ -89,18 +101,32 @@ mod tests {
         let mut buffer = fs::read("./test/1MiB.txt").expect("failed to read file");
         buffer.append(&mut Vec::from("hello"));
 
-        let mut rabin = create(18, 87381, 393216, 64);
+        let rabin = create(18, 87381, 393216, 64);
 
-        assert_eq!(cut(&mut rabin, &buffer[0..736976]), [366598, 239921]);
-        assert_eq!(cut(&mut rabin, &buffer), [366598, 239921, 260915]);
+        assert_eq!(cut(&rabin, &buffer[0..736976], false), [353816]);
+        assert_eq!(
+            cut(&rabin, &buffer[0..736976], true),
+            [353816, 112050, 147806, 123304]
+        );
+
+        assert_eq!(
+            cut(&rabin, &buffer, false),
+            [353816, 112050, 147806, 393216]
+        );
+
+        assert_eq!(
+            cut(&rabin, &buffer, true),
+            [353816, 112050, 147806, 393216, 41693]
+        );
     }
 
     #[test]
     fn dagger_compat() {
         let buffer = sharbage(524288);
-        let mut rabin = create(18, 87381, 393216, 16);
+        let rabin = create(18, 87381, 393216, 16);
 
-        assert_eq!(cut(&mut rabin, &buffer), [189236, 177457, 157595]);
+        assert_eq!(cut(&rabin, &buffer, false), [189236]);
+        assert_eq!(cut(&rabin, &buffer, true), [189236, 177457, 157595]);
     }
 
     fn sharbage(capacity: usize) -> Vec<u8> {
