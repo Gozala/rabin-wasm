@@ -1,7 +1,7 @@
 // @ts-check
 
 import { encodeUTF8, read, sharbage } from "./util.js"
-import { create, cut, createWithPolynom } from "../lib.js"
+import { create, cut, cutBuffer, createWithPolynom } from "../lib.js"
 import { assert } from "chai"
 import * as FZSTD from "fzstd"
 
@@ -51,6 +51,31 @@ describe("rabin", () => {
     const rabin = await create(6, 48, 192, 64)
     assert.deepEqual(
       [...cut(rabin, buffer, true)],
+      [192, 192, 157, 64, 78, 192, 192, 192, 192, 192, 192, 76]
+    )
+  })
+
+  it("shoud accept custom buffers", async () => {
+    const b1 = new Uint8Array(2 * 256)
+    const b2 = new Uint8Array(1 * 119)
+    const b3 = new Uint8Array(5 * 256)
+
+    b1.fill("a".charCodeAt(0))
+    b2.fill("b".charCodeAt(0))
+    b3.fill("c".charCodeAt(0))
+
+    const custom = {
+      length: b1.byteLength + b2.byteLength + b3.byteLength,
+      copyTo(buffer, offset) {
+        buffer.set(b1, offset)
+        buffer.set(b2, offset + b1.byteLength)
+        buffer.set(b3, offset + b1.byteLength + b2.byteLength)
+      },
+    }
+
+    const rabin = await create(6, 48, 192, 64)
+    assert.deepEqual(
+      [...cutBuffer(rabin, custom, true)],
       [192, 192, 157, 64, 78, 192, 192, 192, 192, 192, 192, 76]
     )
   })

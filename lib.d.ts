@@ -22,3 +22,14 @@ export function createWithPolynom(
 ): Rabin | Promise<Rabin>
 
 export function cut(rabin: Rabin, bytes: Uint8Array, end: boolean): Int32Array
+
+export interface Buffer {
+  length: number
+  copyTo(buffer: Uint8Array, offset: number): any
+}
+
+export function cutBuffer(
+  rabin: Rabin,
+  buffer: Buffer,
+  end: boolean
+): Int32Array

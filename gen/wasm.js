@@ -4,6 +4,26 @@ export const activate = () => init(bytecode)
 
 let wasm;
 
+const heap = new Array(32).fill(undefined);
+
+heap.push(undefined, null, true, false);
+
+function getObject(idx) { return heap[idx]; }
+
+let heap_next = heap.length;
+
+function dropObject(idx) {
+    if (idx < 36) return;
+    heap[idx] = heap_next;
+    heap_next = idx;
+}
+
+function takeObject(idx) {
+    const ret = getObject(idx);
+    dropObject(idx);
+    return ret;
+}
+
 let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
 
 cachedTextDecoder.decode();
@@ -18,6 +38,19 @@ function getUint8Memory0() {
 
 function getStringFromWasm0(ptr, len) {
     return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
+}
+
+function getArrayU8FromWasm0(ptr, len) {
+    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
+}
+
+function addHeapObject(obj) {
+    if (heap_next === heap.length) heap.push(heap.length + 1);
+    const idx = heap_next;
+    heap_next = heap[idx];
+
+    heap[idx] = obj;
+    return idx;
 }
 /**
 * @param {number} bits
@@ -100,6 +133,35 @@ export function cut(rabin, bytes, end) {
     }
 }
 
+let stack_pointer = 32;
+
+function addBorrowedObject(obj) {
+    if (stack_pointer == 1) throw new Error('out of js stack');
+    heap[--stack_pointer] = obj;
+    return stack_pointer;
+}
+/**
+* @param {Rabin} rabin
+* @param {any} buffer
+* @param {boolean} end
+* @returns {Int32Array}
+*/
+export function cut_buffer(rabin, buffer, end) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        _assertClass(rabin, Rabin);
+        wasm.cut_buffer(retptr, rabin.ptr, addBorrowedObject(buffer), end);
+        var r0 = getInt32Memory0()[retptr / 4 + 0];
+        var r1 = getInt32Memory0()[retptr / 4 + 1];
+        var v0 = getArrayI32FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_free(r0, r1 * 4);
+        return v0;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+        heap[stack_pointer++] = undefined;
+    }
+}
+
 /**
 */
 export class Rabin {
@@ -121,54 +183,6 @@ export class Rabin {
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_rabin_free(ptr);
-    }
-    /**
-    */
-    get min_size() {
-        var ret = wasm.__wbg_get_rabin_min_size(this.ptr);
-        return ret >>> 0;
-    }
-    /**
-    * @param {number} arg0
-    */
-    set min_size(arg0) {
-        wasm.__wbg_set_rabin_min_size(this.ptr, arg0);
-    }
-    /**
-    */
-    get max_size() {
-        var ret = wasm.__wbg_get_rabin_max_size(this.ptr);
-        return ret >>> 0;
-    }
-    /**
-    * @param {number} arg0
-    */
-    set max_size(arg0) {
-        wasm.__wbg_set_rabin_max_size(this.ptr, arg0);
-    }
-    /**
-    */
-    get window_size() {
-        var ret = wasm.__wbg_get_rabin_window_size(this.ptr);
-        return ret >>> 0;
-    }
-    /**
-    * @param {number} arg0
-    */
-    set window_size(arg0) {
-        wasm.__wbg_set_rabin_window_size(this.ptr, arg0);
-    }
-    /**
-    */
-    get polynom_shift() {
-        var ret = wasm.__wbg_get_rabin_polynom_shift(this.ptr);
-        return ret >>> 0;
-    }
-    /**
-    * @param {number} arg0
-    */
-    set polynom_shift(arg0) {
-        wasm.__wbg_set_rabin_polynom_shift(this.ptr, arg0);
     }
 }
 
@@ -209,6 +223,17 @@ async function init(input) {
     }
     const imports = {};
     imports.wbg = {};
+    imports.wbg.__wbg_copyTo_c2b6e812244947cd = function(arg0, arg1, arg2, arg3) {
+        var ret = getObject(arg0).copyTo(getArrayU8FromWasm0(arg1, arg2), arg3 >>> 0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_length_9cde16fa8cde1fcc = function(arg0) {
+        var ret = getObject(arg0).length;
+        return ret;
+    };
+    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
+        takeObject(arg0);
+    };
     imports.wbg.__wbindgen_throw = function(arg0, arg1) {
         throw new Error(getStringFromWasm0(arg0, arg1));
     };
