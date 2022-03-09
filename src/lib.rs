@@ -12,6 +12,17 @@ use wasm_bindgen::prelude::*;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
+extern "C" {
+    pub type Buffer;
+
+    #[wasm_bindgen(structural, method, js_name=copyTo)]
+    pub fn copy_to(this: &Buffer, target: &mut [u8], offset: usize) -> Buffer;
+
+    #[wasm_bindgen(method, getter)]
+    pub fn length(this: &Buffer) -> usize;
+}
+
+#[wasm_bindgen]
 pub fn create(bits: usize, min_size: usize, max_size: usize, window_size: usize) -> Rabin {
     Rabin::create(bits, min_size, max_size, window_size)
 }
@@ -30,6 +41,13 @@ pub fn configure_with_polynom(
 #[wasm_bindgen]
 pub fn cut(rabin: &Rabin, bytes: &[u8], end: bool) -> Vec<i32> {
     rabin.split(bytes, end)
+}
+
+#[wasm_bindgen]
+pub fn cut_buffer(rabin: &Rabin, buffer: &Buffer, end: bool) -> Vec<i32> {
+    let mut bytes = vec![0; buffer.length()];
+    buffer.copy_to(&mut bytes, 0);
+    cut(&rabin, &bytes, end)
 }
 
 #[cfg(test)]

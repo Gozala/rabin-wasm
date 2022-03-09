@@ -49,7 +49,6 @@ export const createWithPolynom = (
   })
 
 /**
- *
  * @param {Rabin} rabin
  * @param {Uint8Array} bytes
  * @param {boolean} [end=false]
@@ -60,5 +59,17 @@ export const cut = (rabin, bytes, end = false) =>
   !end & (bytes.byteLength < rabin.maxSize)
     ? none
     : Rabin.cut(rabin, bytes, end)
+
+/**
+ * @param {Rabin} rabin
+ * @param {{length:number, copyTo:(target:Uint8Array, offset:number) => unknown}} buffer
+ * @param {boolean} [end=false]
+ */
+export const cutBuffer = (rabin, buffer, end = false) =>
+  // If we have less then `maxSize` of bytes & it's not the end, there is no
+  // point to copy bytes into wasm as we'll get no chunks.
+  !end & (buffer.byteLength < rabin.maxSize)
+    ? none
+    : Rabin.cut_buffer(rabin, buffer, end)
 
 const none = new Uint32Array(0)
