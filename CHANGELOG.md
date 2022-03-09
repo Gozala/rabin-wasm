@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://www.github.com/Gozala/rabin-wasm/compare/v2.0.0...v2.1.0) (2022-03-09)
+
+
+### Features
+
+* support for copy-on-read buffers ([#14](https://www.github.com/Gozala/rabin-wasm/issues/14)) ([a0d2c41](https://www.github.com/Gozala/rabin-wasm/commit/a0d2c41ddb86898f5b365f80c69a1319800d0316))
+
 ## [2.0.0](https://www.github.com/Gozala/rabin-wasm/compare/v1.0.1...v2.0.0) (2022-03-05)
 
 
